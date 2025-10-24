@@ -1,0 +1,21 @@
+[build-system]
+requires = ["uv_build>=0.9.5,<0.10.0"]
+build-backend = "uv_build"
+
+[project]
+name = "zabmap_api"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+"flask",
+"flask_cors",
+"gunicorn",
+"logging",
+"psycopg2",
+"requests",
+]
+
+[project.scripts]
+zabmap_api = "zabmap_api.main:run"
