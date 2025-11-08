@@ -1,61 +1,64 @@
+<script setup>
+import Loader from "@/components/Loader.vue";
+</script>
+
 <template>
-  <div id="app">
-    <div class="column hosts-column">
-      <div class="sticky-header">
-        <h2>Hosts</h2>
-        <input type="text" placeholder="Search hosts..." v-model="hostFilter" />
-      </div>
-      <HostsList :filterText="hostFilter" @hostSelected="handleHostSelected"/>
+  <div id="app" class="grow flex flex-nowrap items-center gap-5 justify-center py-12 flex-row">
+    <div class="h-full p-6 text-center basis-1 grow">
+      <Suspense>
+        <router-view name="HostsView" />
+        <template #fallback><Loader /> </template>
+      </Suspense>
     </div>
-    <div class="column filesystems-column" v-if="selectedHost">
-      <div class="sticky-header">
-        <h2>Filesystems for {{ selectedHost }}</h2>
-        <input type="text" placeholder="Search filesystems..." v-model="filesystemFilter" />
-      </div>
-      <FilesystemsList :host="selectedHost" :filter="filesystemFilter" @filesystemSelected="handleFilesystemSelected"/>
+    <div class="h-full p-6 text-center basis-1 grow">
+      <Suspense>
+        <router-view name="FilesystemsView" />
+        <template #fallback><Loader /> </template>
+      </Suspense>
     </div>
-    <div class="column properties-column" v-if="selectedFilesystem">
-      <PropertiesView :host="selectedHost" :filesystem="selectedFilesystem"/>
+    <div class="h-full p-6 text-center basis-1 grow">
+      <Suspense>
+        <router-view name="PropertiesView" />
+        <template #fallback><Loader /> </template>
+      </Suspense>
     </div>
-   <TooltipLegend />
   </div>
 </template>
 
-<script>
-import HostsList from './components/HostsList.vue';
-import FilesystemsList from './components/FilesystemsList.vue';
-import PropertiesView from './components/PropertiesView.vue';
-import TooltipLegend from './components/TooltipLegend.vue';
-
-export default {
-  name: 'App',
-  components: {
-    HostsList,
-    FilesystemsList,
-    PropertiesView,
-    TooltipLegend
-
-  },
-  data() {
-    return {
-      selectedHost: null,
-      selectedFilesystem: null,
-      hostFilter: '',
-      filesystemFilter: '',
-    };
-  },
-  methods: {
-    handleHostSelected(host) {
-      this.selectedHost = host;
-      this.selectedFilesystem = null;
-      this.filesystemFilter = ''; // Reset filesystem filter when a new host is selected
-    },
-    handleFilesystemSelected(filesystem) {
-      this.selectedFilesystem = filesystem;
-    }
-  }
-}
-</script>
+<!-- <script> -->
+<!-- // import HostsList from "./components/HostsList.vue"; -->
+<!-- // import FilesystemsList from "./components/FilesystemsList.vue"; -->
+<!-- // import PropertiesView from "./components/PropertiesView.vue"; -->
+<!-- // import TooltipLegend from "./components/TooltipLegend.vue"; -->
+<!---->
+<!-- export default { -->
+<!--   name: "App", -->
+<!--   // components: { -->
+<!--   //   HostsList, -->
+<!--   //   FilesystemsList, -->
+<!--   //   PropertiesView, -->
+<!--   //   TooltipLegend, -->
+<!--   // }, -->
+<!--   // data() { -->
+<!--   //   return { -->
+<!--   //     selectedHost: null, -->
+<!--   //     selectedFilesystem: null, -->
+<!--   //     hostFilter: "", -->
+<!--   //     filesystemFilter: "", -->
+<!--   //   }; -->
+<!--   // }, -->
+<!--   // methods: { -->
+<!--   //   handleHostSelected(host) { -->
+<!--   //     this.selectedHost = host; -->
+<!--   //     this.selectedFilesystem = null; -->
+<!--   //     this.filesystemFilter = ""; // Reset filesystem filter when a new host is selected -->
+<!--   //   }, -->
+<!--   //   handleFilesystemSelected(filesystem) { -->
+<!--   //     this.selectedFilesystem = filesystem; -->
+<!--   //   }, -->
+<!--   // }, -->
+<!-- }; -->
+<!-- </script> -->
 
 <style>
 #app {
@@ -68,12 +71,14 @@ export default {
   margin-right: 10px;
 }
 
-.hosts-column, .filesystems-column {
+.hosts-column,
+.filesystems-column {
   flex: 3;
   min-width: 400px;
 }
 
-.filesystems-column .sticky-header, .hosts-column .sticky-header {
+.filesystems-column .sticky-header,
+.hosts-column .sticky-header {
   position: -webkit-sticky;
   position: sticky;
   top: 0;
@@ -101,4 +106,3 @@ export default {
   margin-top: 0;
 }
 </style>
-

@@ -2,15 +2,23 @@
   "name": "zabgui",
   "version": "0.1.0",
   "private": true,
+	"type": "module",
   "scripts": {
-		"dev": "vite",
+    "dev": "vite",
     "build": "vite build",
     "serve": "vite preview"
   },
   "dependencies": {
+    "@preline/accordion": "^3.2.3",
+    "@preline/tree-view": "^3.2.3",
+    "@tailwindcss/postcss": "^4.1.16",
+    "@tailwindcss/vite": "^4.1.16",
     "@vitejs/plugin-vue": "^6.0.1",
+    "@vueuse/core": "^14.0.0",
+    "autoprefixer": "^10.4.21",
     "axios": "^1.7.2",
     "core-js": "^3.8.3",
+    "tailwindcss": "^4.1.16",
     "vue": "^3.2.13",
     "vue-router": "^4.0.13"
   },

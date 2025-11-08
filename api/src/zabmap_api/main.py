@@ -22,9 +22,9 @@ class StandaloneApplication(BaseApplication):
     def load(self):
         return self.application
 
-
 def run():
     options = {
+        "reload": True,
         "bind": "0.0.0.0:5050",
         "workers": 2,  # (multiprocessing.cpu_count() * 2) + 1,
     }

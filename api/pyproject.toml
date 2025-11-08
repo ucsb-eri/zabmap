@@ -9,13 +9,16 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+"apscheduler",
 "flask",
 "flask_cors",
 "gunicorn",
 "logging",
+"peewee",
 "psycopg2",
 "requests",
 ]
 
 [project.scripts]
 zabmap_api = "zabmap_api.main:run"
+zabmap_sync = "zabmap_api.scheduler:update_backup_status"

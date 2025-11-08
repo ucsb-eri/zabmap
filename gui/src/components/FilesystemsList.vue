@@ -1,156 +1,84 @@
+<script setup>
+import { toRef } from 'vue';
+
+const props = defineProps(["filesystems"]);
+const filesystems = toRef(props, 'filesystems');
+
+const filesystemFilter = defineModel();
+
+
+const emit = defineEmits(["filesystemSelected"]);
+
+
+function selectFilesystem(fs) {
+  ;
+}
+
+// function getButtonClass(fs) {
+//   if (noSpecialClassFilesystems.some(path => fs.filesystem.includes(path)) || exactMatchFilesystems.includes(fs.filesystem)) {
+//     return ''; // No special class for these filesystems
+//   }
+//   if (fs.manual_override) {
+//     const currentDate = new Date();
+//     const endDate = new Date(fs.manual_override_end_date);
+//
+//     if (currentDate > endDate) {
+//       // Manual override has expired
+//       fs.manual_override = false;
+//       fs.manual_override_end_date = null;
+//       this.clearExpiredOverride(fs); // Clear the override in the database
+//       return this.getColorClass(fs);
+//     } else {
+//       return 'orange-button';
+//     }
+//   }
+//   return this.getColorClass(fs);
+// }
+//
+// function getLabelClass(fs) {
+//   if (!fs.most_recent_snapshot) {
+//     return ""; // No label if there's no snapshot
+//   }
+//   const snapshotName = fs.most_recent_snapshot.toLowerCase();
+//   if (snapshotName.includes("zas")) {
+//     return "zas";
+//   }
+//   return "zab";
+// }
+// isBillable(fs) {
+//   const billableValue = fs.properties && (fs.properties['grit:billable'] === 'true' || fs.properties['grit:billable'] === 'yes');
+//   return billableValue;
+// }
+//
+</script>
+
 <template>
   <div>
     <ul>
-      <li v-for="fs in filteredFilesystems" :key="fs.name">
+      <li v-for="filesystem in filesystems" :key="filesystem.id">
         <button
-          @click="selectFilesystem(fs.name)"
-          :class="['filesystem-button', getButtonClass(fs)]"
+          @click="emit('filesystemSelected', filesystem.id)"
+          :class="['filesystem-button' /* getButtonClass(fs) */]"
         >
-          <span class="filesystem-name">{{ fs.name }}</span>
-          <span :class="[getLabelClass(fs)]" class="label">
-            {{ getLabelClass(fs).toUpperCase() }}
+          <span class="filesystem-name">{{ filesystem.path }}</span>
+          <span
+            :class="[
+              /* getLabelClass(fs) */
+            ]"
+            class="label"
+          >
+            <!-- {{ /* getLabelClass(fs).toUpperCase() }} -->
           </span>
-          <span v-if="isBillable(fs)" class="label">$</span>
+          <!-- <span v-if="isBillable(fs)" class="label">$</span> -->
         </button>
       </li>
     </ul>
   </div>
 </template>
 
-<script>
-import axios from 'axios';
-import { noSpecialClassFilesystems, exactMatchFilesystems } from '@/config/filesystemConfig';
-
-export default {
-  props: ['host', 'filter'],
-  data() {
-    return {
-      filesystems: [],
-      localFilter: this.filter
-    };
-  },
-  computed: {
-    filteredFilesystems() {
-      return this.filesystems.filter(fs =>
-        fs.name.toLowerCase().includes(this.localFilter.toLowerCase())
-      );
-    }
-  },
-  watch: {
-    host(newHost) {
-      if (newHost) {
-        this.fetchFilesystems(newHost);
-      }
-    },
-    filter(newFilter) {
-      this.localFilter = newFilter; // Sync local filter with parent filter
-    }
-  },
-  mounted() {
-    if (this.host) {
-      this.fetchFilesystems(this.host);
-    }
-  },
-  methods: {
-    async fetchFilesystems(host) {
-      try {
-        console.log(`Fetching filesystems for host: ${host}`);
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/hosts/${host}/filesystems`);
-        console.log('Filesystems fetched:', response.data);
-        this.filesystems = response.data;
-      } catch (error) {
-        console.error('Error fetching filesystems:', error);
-      }
-    },
-    selectFilesystem(fs) {
-      console.log('Filesystem selected:', fs);
-      this.$emit('filesystemSelected', fs);
-    },
-    async clearExpiredOverride(fs) {
-      try {
-        const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/hosts/${this.host}/filesystems/${fs.name}/clear_override`);
-        console.log('Override cleared successfully:', response.data);
-      } catch (error) {
-        console.error('Error clearing override:', error);
-      }
-    },
-    getButtonClass(fs) {
-      if (noSpecialClassFilesystems.some(path => fs.name.includes(path)) || exactMatchFilesystems.includes(fs.name)) {
-        return ''; // No special class for these filesystems
-      }
-      if (fs.manual_override) {
-        const currentDate = new Date();
-        const endDate = new Date(fs.manual_override_end_date);
-
-        if (currentDate > endDate) {
-          // Manual override has expired
-          fs.manual_override = false;
-          fs.manual_override_end_date = null;
-          this.clearExpiredOverride(fs); // Clear the override in the database
-          return this.getColorClass(fs);
-        } else {
-          return 'orange-button';
-        }
-      }
-      return this.getColorClass(fs);
-    },
-    getColorClass(fs) {
-      if (!fs.most_recent_snapshot) {
-        return 'red-button';
-      }
-      const snapshotDateMatch = fs.most_recent_snapshot.match(/zas_[hd]-(\d{8})-/);
-      let snapshotDate = null;
-
-      if (snapshotDateMatch) {
-        snapshotDate = snapshotDateMatch[1];
-      } else {
-        const dateMatch = fs.most_recent_snapshot.match(/-(\d{8})/);
-        if (dateMatch) {
-          snapshotDate = dateMatch[1];
-        }
-      }
-
-      if (snapshotDate) {
-        const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-        const snapshotDateObj = new Date(
-          snapshotDate.slice(0, 4),
-          snapshotDate.slice(4, 6) - 1,
-          snapshotDate.slice(6, 8)
-        );
-        const timeDiff = Math.abs(new Date() - snapshotDateObj);
-        const diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
-
-        if (snapshotDate === today) {
-          return 'green-button';
-        } else if (diffDays > 30) {
-          return 'red-button';
-        } else {
-          return 'yellow-button';
-        }
-      }
-      return '';
-    },
-    getLabelClass(fs) {
-      if (!fs.most_recent_snapshot) {
-        return ''; // No label if there's no snapshot
-      }
-      const snapshotName = fs.most_recent_snapshot.toLowerCase();
-      if (snapshotName.includes('zas')) {
-        return 'zas';
-      }
-      return 'zab';
-    },
-    isBillable(fs) {
-      const billableValue = fs.properties && (fs.properties['grit:billable'] === 'true' || fs.properties['grit:billable'] === 'yes');
-      return billableValue;
-    }
-  }
-}
-</script>
-
 <style scoped>
 .filesystem-button {
-  display: flex;
+  display: block;
   justify-content: space-between;
   align-items: center;
   margin: 5px 0;

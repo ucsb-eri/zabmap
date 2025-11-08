@@ -1,12 +1,20 @@
-import { createRouter, createWebHistory } from 'vue-router';
-import HostsList from '../components/HostsList.vue';
-import FilesystemsList from '../components/FilesystemsList.vue';
-import PropertiesView from '../components/PropertiesView.vue';
+import { createRouter, createWebHistory } from "vue-router";
+import HostsView from "@/views/HostsView.vue";
+import FilesystemsView from "@/views/FilesystemsView.vue";
+import PropertiesView from "@/views/PropertiesView.vue";
 
 const routes = [
-  { path: '/hosts', component: HostsList },
-  { path: '/hosts/:host/filesystems', component: FilesystemsList },
-  { path: '/hosts/:host/filesystems/:filesystem', component: PropertiesView },
+  { path: "/", components: { HostsView } },
+  {
+    path: "/hosts/:hostId/filesystems",
+    components: { HostsView, FilesystemsView },
+    props: true,
+  },
+  {
+    path: "/hosts/:hostId/filesystems/:filesystemId",
+    components: { HostsView, FilesystemsView, PropertiesView },
+    props: true,
+  },
 ];
 
 const router = createRouter({
@@ -15,4 +23,3 @@ const router = createRouter({
 });
 
 export default router;
-
