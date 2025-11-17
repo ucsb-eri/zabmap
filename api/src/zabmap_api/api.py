@@ -25,10 +25,10 @@ logging.getLogger("peewee").setLevel(logging.INFO)
 with app.app_context():
     from zabmap_api.db import ZfsSnapshots
     from apscheduler.schedulers.background import BackgroundScheduler
-    from .scheduler import update_backup_status
+    from .scheduler import run
 
     # scheduler = BackgroundScheduler()
-    # scheduler.add_job(func=update_backup_status, trigger="interval", minutes=10)
+    # scheduler.add_job(func=run, trigger="interval", minutes=10)
     # scheduler.start()
 
 CORS(
@@ -53,8 +53,6 @@ def get_db_connection():
     return conn
 
 
-
-
 @app.route("/api/hosts", methods=["GET"])
 def get_hosts():
     try:
@@ -70,14 +68,20 @@ def get_hosts():
 @app.route("/api/hosts/<host_id>/filesystems", methods=["GET"])
 def get_host_filesystems(host_id):
     try:
-        Parent = Filesystem.alias()
-        # snapshots = Filesystem.select(Filesystem, Parent).join(Parent, on=(Filesystem.parent == Parent.id))
+        # Parent = Filesystem.alias()
+        # filesystem_query = (
+        #     Filesystem.select(Filesystem, Parent)
+        #     .join(Parent, JOIN.LEFT_OUTER, on=(Filesystem.parent == Parent.id))
+        #     .where(Filesystem.host_id == host_id)
+        # )
         filesystem_query = Filesystem.select().where(Filesystem.host_id == host_id)
 
         filesystems = []
 
         for el in filesystem_query:
-            filesystem = model_to_dict(el, backrefs=True)
+            print(el)
+            filesystem = model_to_dict(el, backrefs=True, max_depth=1)
+            print(filesystem)
             # children = model_to_dict(snapshot.children)
             # print(children)
 
@@ -97,7 +101,6 @@ def get_filesystem(filesystem_id):
         # snapshots = Filesystem.select(Filesystem, Parent).join(Parent, on=(Filesystem.parent == Parent.id))
         filesystem_query = Filesystem.get_by_id(filesystem_id)
 
-
         filesystem = model_to_dict(filesystem_query, backrefs=True)
         # for el in filesystem_query:
         #     filesystem = model_to_dict(el, backrefs=True)
@@ -113,19 +116,6 @@ def get_filesystem(filesystem_id):
         return jsonify({"error": "Internal server error"}), 500
 
 
-
-def extract_date_from_snapshot_name(snapshot):
-    if not snapshot:
-        return None
-
-    match = re.match(r'.*(\d{4}\d{2}\d{2}\d{2}\d{2}\d{2})$', snapshot)
-
-    if match:
-        return match.group()
-    
-    return None
-    
-
 @app.route("/api/hosts/<host>/backupstatus", methods=["GET"])
 def get_backupstatus(host):
     # query = ZfsSnapshots.select(ZfsSnapshots.id, ZfsSnapshots.hostname, ZfsSnapshots.filesystem, ZfsSnapshots.most_recent_snapshot, ZfsSnapshots.parent)
@@ -135,22 +125,33 @@ def get_backupstatus(host):
     # ZfsSnapshots.select(ZfsSnapshots, Parent).join(Parent, on=(ZfsSnapshots.parent == Parent.id)).where(Parent.hostname == host)
     query = ZfsSnapshots.select().where(ZfsSnapshots.hostname == host)
 
-
     for el in query:
         filesystem = model_to_dict(el, backrefs=True)
 
         in_sync_ids = []
         out_of_sync_ids = []
         backup_count = 0
-        fs_snapshot_date = extract_date_from_snapshot_name(filesystem['most_recent_snapshot'])
-        for backup in filesystem['children']:
-            backup_snapshot_date = extract_date_from_snapshot_name(backup['most_recent_snapshot'])
+        fs_snapshot_date = extract_date_from_snapshot_name(
+            filesystem["most_recent_snapshot"]
+        )
+        for backup in filesystem["children"]:
+            backup_snapshot_date = extract_date_from_snapshot_name(
+                backup["most_recent_snapshot"]
+            )
 
             if not fs_snapshot_date or fs_snapshot_date != backup_snapshot_date:
                 in_sync = False
-            
-            
-        response.append({'id': filesystem['id'], 'hostname': filesystem['hostname'], 'filesystem': filesystem['filesystem'], 'backup_count': backup_count, 'in_sync_ids': in_sync_ids, 'out_of_sync_ids': out_of_sync_ids})
+
+        response.append(
+            {
+                "id": filesystem["id"],
+                "hostname": filesystem["hostname"],
+                "filesystem": filesystem["filesystem"],
+                "backup_count": backup_count,
+                "in_sync_ids": in_sync_ids,
+                "out_of_sync_ids": out_of_sync_ids,
+            }
+        )
 
     return jsonify(response)
     # paginated_query = PaginatedQuery(query, paginate_by=100, page=int(request.args.get("page", 1)))
@@ -163,14 +164,12 @@ def get_backupstatus(host):
     #     filesystem = model_to_dict(snapshot, backrefs=True)
     #     print(filesystem)
 
-
     # filesystems = []
     # for el in all:
     #     filesystem = model_to_dict(el, backrefs=True)
     #     # print(filesystem)
     #     filesystems.append(filesystem)
 
-    
     # snapshots = ZfsSnapshots.select(fn.Distinct(ZfsSnapshots.hostname))
     # Parent = ZfsSnapshots.alias()
     # children = ZfsSnapshots.select(ZfsSnapshots, Parent).join(Parent, on=(ZfsSnapshots.parent == Parent.id))
@@ -182,6 +181,7 @@ def get_backupstatus(host):
     #
     # print('')
     return jsonify(dicts)
+
 
 #
 #

@@ -13,6 +13,7 @@ dependencies = [
 "flask",
 "flask_cors",
 "gunicorn",
+"icecream",
 "logging",
 "peewee",
 "psycopg2",
@@ -21,4 +22,4 @@ dependencies = [
 
 [project.scripts]
 zabmap_api = "zabmap_api.main:run"
-zabmap_sync = "zabmap_api.scheduler:update_backup_status"
+zabmap_sync = "zabmap_api.scheduler:run"

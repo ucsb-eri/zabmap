@@ -1,11 +1,12 @@
-from flask import current_app
 import os
 
+from flask import current_app
 from peewee import (
     BooleanField,
     CharField,
-    DateField,
+    DateTimeField,
     ForeignKeyField,
+    IntegerField,
     Model,
     PostgresqlDatabase,
     PrimaryKeyField,
@@ -18,6 +19,14 @@ psql_db = PostgresqlDatabase(
     user=os.environ["FLASK_DB_USER"],
     password=os.environ["FLASK_DB_PASSWORD"],
 )
+
+from enum import Enum
+
+
+class BackupType(Enum):
+    NONE = None
+    ZAB = "zab"
+    ZAS = "zas"
 
 
 class BaseModel(Model):
@@ -34,11 +43,11 @@ class ZfsSnapshots(BaseModel):
     filesystem = CharField()
     most_recent_snapshot = CharField()
     properties = JSONField()
-    timestamp = DateField()
+    timestamp = DateTimeField()
     last_backup = CharField()
     manual_override = BooleanField(default=False)
     manual_override_reason = CharField()
-    last_run = DateField()
+    last_run = DateTimeField()
     used_space = CharField()
     disabled = BooleanField(default=False)
     in_sync = BooleanField(default=False)
@@ -48,7 +57,9 @@ class ZfsSnapshots(BaseModel):
 class Host(BaseModel):
     id = PrimaryKeyField()
     name = CharField(unique=True)
-    backups_in_sync = BooleanField(default=False)
+    snapshots_in_sync = BooleanField(default=None)
+    filesystem_count = IntegerField()
+    replication_count = JSONField()
 
 
 class Filesystem(Model):
@@ -61,8 +72,14 @@ class Filesystem(Model):
     host = ForeignKeyField(model=Host, backref="filesystems")
     path = CharField()
     parent = ForeignKeyField("self", null=True, backref="backups")
-    latest_backup = DateField()
-    in_sync_with_parent = BooleanField(default=None)
+    latest_snapshot = DateTimeField()
+    snapshots_in_sync = BooleanField(default=None)
+    disabled = BooleanField(default=None)
+    zfs_properties = JSONField()
+    replications = IntegerField(default=0)
+    backup_type = CharField(default = None)
+    ignore_backup_state = BooleanField(default=None)
+
 
 class MetaData(BaseModel):
     id = PrimaryKeyField()
