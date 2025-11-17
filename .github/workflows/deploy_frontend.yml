@@ -1,0 +1,41 @@
+name: Deploy GUI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'gui/**'
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, deploy]
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: install dependencies
+        run: |
+          cd gui
+          npm install --omit=dev
+      - name: build the site
+        run: |
+          cd gui
+          npm run build
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_BASE_URL: ${{ vars.VITE_BASE_URL }}
+      - name: copy build to the server
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ vars.HOST }}
+          username: ${{ vars.USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "gui/dist/*"
+          strip_components: 2
+          target: /opt/grit/zabmap/gui
+          rm: true
