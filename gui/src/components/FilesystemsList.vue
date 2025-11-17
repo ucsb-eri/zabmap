@@ -1,19 +1,34 @@
 <script setup>
-import { toRef } from 'vue';
+import { toRef } from "vue";
 
 const props = defineProps(["filesystems"]);
-const filesystems = toRef(props, 'filesystems');
+const filesystems = toRef(props, "filesystems");
 
 const filesystemFilter = defineModel();
 
-
 const emit = defineEmits(["filesystemSelected"]);
 
-
-function selectFilesystem(fs) {
-  ;
+function nrOfChildren(filesystem) {
+  if (!filesystem.backups) {
+    return 0;
+  }
+  return filesystem.backups.length;
 }
 
+function inSyncClass(filesystem) {
+  if (filesystem.snapshots_in_sync === null) {
+    return "";
+  } else if (filesystem.snapshots_in_sync === true) {
+    return "green-button";
+  } else {
+    return "red-button";
+  }
+  // if(filesystem)
+  // if(filesystem.snapshots_in_sync) {
+  // 	return 'green-button'
+  // }
+  // return 'red-button'
+}
 // function getButtonClass(fs) {
 //   if (noSpecialClassFilesystems.some(path => fs.filesystem.includes(path)) || exactMatchFilesystems.includes(fs.filesystem)) {
 //     return ''; // No special class for these filesystems
@@ -58,17 +73,37 @@ function selectFilesystem(fs) {
       <li v-for="filesystem in filesystems" :key="filesystem.id">
         <button
           @click="emit('filesystemSelected', filesystem.id)"
-          :class="['filesystem-button' /* getButtonClass(fs) */]"
+          :class="[
+            'filesystem-button',
+            inSyncClass(filesystem) /* getButtonClass(fs) */,
+          ]"
         >
-          <span class="filesystem-name">{{ filesystem.path }}</span>
-          <span
-            :class="[
-              /* getLabelClass(fs) */
-            ]"
-            class="label"
-          >
-            <!-- {{ /* getLabelClass(fs).toUpperCase() }} -->
-          </span>
+          <div :class="['flex', 'flex-row']">
+            <div class="filesystem-name">{{ filesystem.path }}</div>
+            <div :class="['font-mono', 'min-w-20']">
+              <span
+                v-if="filesystem.ignore"
+                class="inline-flex items-center rounded-md bg-gray-600/10 px-2 py-1 text-xs font-medium text-black inset-ring inset-ring-gray-400/20"
+                >ignored</span
+              >
+            </div>
+            <div :class="['font-mono', 'min-w-20']">
+              <span
+                v-if="filesystem.backup_type"
+                class="inline-flex items-center rounded-md bg-gray-600/10 px-2 py-1 text-xs font-medium text-black inset-ring inset-ring-gray-400/20"
+                >{{ filesystem.backup_type }}</span
+              >
+            </div>
+            <div :class="['font-mono', 'min-w-[110px]', 'text-right']">
+              <span
+                class="inline-flex items-center rounded-md bg-gray-600/10 px-2 py-1 text-xs font-medium text-black inset-ring inset-ring-gray-400/20"
+              >
+                backups: {{ nrOfChildren(filesystem) }}/{{
+                  filesystem.replications
+                }}</span
+              >
+            </div>
+          </div>
           <!-- <span v-if="isBillable(fs)" class="label">$</span> -->
         </button>
       </li>
@@ -143,4 +178,3 @@ function selectFilesystem(fs) {
   z-index: 10;
 }
 </style>
-

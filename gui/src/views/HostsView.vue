@@ -2,12 +2,15 @@
 import router from '@/router'
 import HostsList from '@/components/HostsList.vue';
 import { useFetch } from "@vueuse/core";
+import { toRef } from "vue";
 
 const hostFilter = defineModel()
 
 const props = defineProps({
-  selectedHostId: String,
+  hostId: String,
 });
+
+const hostId = toRef(props, "hostId");
 
 const {
   isFetching,
@@ -40,7 +43,7 @@ function handleHostSelected(hostId) {
         <h1>Hosts</h1>
         <input type="text" placeholder="Search hosts..." v-model="hostFilter" />
       </div>
-      <HostsList :hosts="filteredHosts(hosts)" :selectedHostId="selectedHostId" @hostSelected="handleHostSelected" />
+      <HostsList :hosts="filteredHosts(hosts)" :hostId="hostId" @hostSelected="handleHostSelected" />
     </div>
   </div>
 </template>

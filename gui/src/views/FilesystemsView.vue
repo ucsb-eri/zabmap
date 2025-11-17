@@ -19,8 +19,6 @@ const url = ref(
 );
 watch(hostId, (newVal, oldVal) => {
   url.value = `${import.meta.env.VITE_API_URL}/api/hosts/${hostId.value}/filesystems`;
-  console.log(newVal);
-  console.log(oldVal);
 });
 
 const {

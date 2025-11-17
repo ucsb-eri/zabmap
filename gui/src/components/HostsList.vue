@@ -1,14 +1,20 @@
 <script setup>
-import Loader from "@/components/Loader.vue";
+import { ref, watch, toRef } from "vue";
 
 const props = defineProps(["hosts", "selectedHostId"]);
 const emit = defineEmits(["hostSelected"]);
 
-const hosts = props.selectedHostId
-  ? props.hosts.filter((el) => el.id == props.selectedHostId)
-  : props.hosts;
-function inSyncClass(inSync) {
-  return inSync ? "in-sync" : "out-of-sync";
+const hosts = toRef(props, "hosts");
+const selectedHostId = toRef(props, "selectedHostId");
+
+watch(selectedHostId, (newVal, oldVal) => {
+  hosts.value = selectedHostId.value
+    ? props.hosts.filter((el) => el.id == selectedHostId)
+    : props.hosts;
+});
+
+function inSyncClass(host) {
+  return host.snapshots_in_sync ? "green-button" : "red-button";
 }
 </script>
 
@@ -17,10 +23,38 @@ function inSyncClass(inSync) {
     <ul>
       <li v-for="host in hosts" :key="host">
         <button
-          :class="['host-button', inSyncClass(host.backups_in_sync)]"
+          :class="['host-button', inSyncClass(host)]"
           @click="emit('hostSelected', host.id)"
         >
-          {{ host.name }}
+          <div :class="['flex', 'flex-row']">
+            <div class="filesystem-name">{{ host.name }}</div>
+            <div :class="['flex', 'flex-row-reverse', 'grow']">
+              <!-- <div> -->
+              <span :class="['flex-initial', 'min-w-[150px]', 'text-right']">
+                <span
+                  class="inline-flex items-center rounded-md bg-gray-600/10 px-2 py-1 text-xs font-medium text-black inset-ring inset-ring-gray-400/20"
+                >
+                  <span
+                    class="font-mono"
+                    v-for="(value, key) in host.replication_count"
+                  >
+                    {{ key }}={{ value }}&nbsp;
+                    <!-- {{ /* getLabelClass(fs).toUpperCase() }} -->
+                  </span>
+                </span>
+              </span>
+              <span
+                :class="['font-mono', 'min-w-20']"
+                v-if="host.filesystem_count"
+              >
+                <span
+                  class="inline-flex items-center rounded-md bg-gray-600/10 px-2 py-1 text-xs font-medium text-black inset-ring inset-ring-gray-400/20"
+                  >fs: {{ host.filesystem_count }}</span
+                >
+              </span>
+              <!-- </div> -->
+            </div>
+          </div>
         </button>
       </li>
     </ul>
@@ -50,7 +84,10 @@ function inSyncClass(inSync) {
   border-color: #007bff;
 }
 
-.out-of-sync {
+.green-button {
+  background-color: #ccffcc;
+}
+.red-button {
   background-color: #ffcccc;
 }
 
