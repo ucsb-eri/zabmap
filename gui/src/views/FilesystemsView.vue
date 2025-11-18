@@ -29,6 +29,15 @@ const {
   .get()
   .json();
 
+function filteredFilesystems(filesystems) {
+  filesystems.sort((a, b) => a.path.localeCompare(b.path));
+  const filterText = filesystemFilter.value ?? "";
+
+  return filesystems.filter((filesystem) =>
+    filesystem["path"].toLowerCase().includes(filterText.toLowerCase()),
+  );
+}
+
 function handleFilesystemSelected(filesystemId) {
   router.push(`/hosts/${hostId.value}/filesystems/${filesystemId}`);
 }
@@ -37,7 +46,7 @@ function handleFilesystemSelected(filesystemId) {
 <template>
   <div>
     <div class="sticky-header">
-      <h2>Filesystems for {{ filesystems[0].host.name }}</h2>
+      <h1>Filesystems for {{ filesystems[0].host.name }}</h1>
       <input
         type="text"
         placeholder="Search filesystems..."
@@ -45,7 +54,7 @@ function handleFilesystemSelected(filesystemId) {
       />
     </div>
     <FilesystemsList
-      :filesystems
+      :filesystems=filteredFilesystems(filesystems)
       @filesystemSelected="handleFilesystemSelected"
     />
   </div>

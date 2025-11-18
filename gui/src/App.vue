@@ -1,71 +1,43 @@
 <script setup>
 import Loader from "@/components/Loader.vue";
+import LastUpdated from "@/components/LastUpdated.vue";
 </script>
 
 <template>
-  <div id="app" class="grow flex flex-nowrap items-center gap-5 justify-center py-12 flex-row">
-    <div class="h-full p-6 text-center basis-1 grow">
+  <div id="app">
+    <div  class="flex flex-row-reverse pr-2">
       <Suspense>
-        <router-view name="HostsView" />
+        <LastUpdated></LastUpdated>
         <template #fallback><Loader /> </template>
       </Suspense>
     </div>
-    <div class="h-full p-6 text-center basis-1 grow">
-      <Suspense>
-        <router-view name="FilesystemsView" />
-        <template #fallback><Loader /> </template>
-      </Suspense>
-    </div>
-    <div class="h-full p-6 text-center basis-1 grow">
-      <Suspense>
-        <router-view name="PropertiesView" />
-        <template #fallback><Loader /> </template>
-      </Suspense>
+    <div
+      class="flex items-strech"
+    > <!-- grow flex flex-nowrap justify-start flex- items-center gap-2 justify-center flex-row -->
+
+      <div class="self-start h-full p-6 text-center basis-1 grow">
+        <Suspense>
+          <router-view name="HostsView" />
+          <template #fallback><Loader /> </template>
+        </Suspense>
+      </div>
+      <div class="h-full p-6 text-center basis-1 grow">
+        <Suspense>
+          <router-view name="FilesystemsView" />
+          <template #fallback><Loader /> </template>
+        </Suspense>
+      </div>
+      <div class="h-full p-6 text-center basis-1 grow">
+        <Suspense>
+          <router-view name="PropertiesView" />
+          <template #fallback><Loader /> </template>
+        </Suspense>
+      </div>
     </div>
   </div>
 </template>
 
-<!-- <script> -->
-<!-- // import HostsList from "./components/HostsList.vue"; -->
-<!-- // import FilesystemsList from "./components/FilesystemsList.vue"; -->
-<!-- // import PropertiesView from "./components/PropertiesView.vue"; -->
-<!-- // import TooltipLegend from "./components/TooltipLegend.vue"; -->
-<!---->
-<!-- export default { -->
-<!--   name: "App", -->
-<!--   // components: { -->
-<!--   //   HostsList, -->
-<!--   //   FilesystemsList, -->
-<!--   //   PropertiesView, -->
-<!--   //   TooltipLegend, -->
-<!--   // }, -->
-<!--   // data() { -->
-<!--   //   return { -->
-<!--   //     selectedHost: null, -->
-<!--   //     selectedFilesystem: null, -->
-<!--   //     hostFilter: "", -->
-<!--   //     filesystemFilter: "", -->
-<!--   //   }; -->
-<!--   // }, -->
-<!--   // methods: { -->
-<!--   //   handleHostSelected(host) { -->
-<!--   //     this.selectedHost = host; -->
-<!--   //     this.selectedFilesystem = null; -->
-<!--   //     this.filesystemFilter = ""; // Reset filesystem filter when a new host is selected -->
-<!--   //   }, -->
-<!--   //   handleFilesystemSelected(filesystem) { -->
-<!--   //     this.selectedFilesystem = filesystem; -->
-<!--   //   }, -->
-<!--   // }, -->
-<!-- }; -->
-<!-- </script> -->
-
 <style>
-#app {
-  display: flex;
-  align-items: flex-start;
-}
-
 .column {
   padding: 10px;
   margin-right: 10px;

@@ -14,7 +14,7 @@ watch(selectedHostId, (newVal, oldVal) => {
 });
 
 function inSyncClass(host) {
-  return host.snapshots_in_sync ? "green-button" : "red-button";
+  return host.snapshots_in_sync ? "bg-green-200" : "bg-red-200";
 }
 </script>
 
@@ -23,7 +23,7 @@ function inSyncClass(host) {
     <ul>
       <li v-for="host in hosts" :key="host">
         <button
-          :class="['host-button', inSyncClass(host)]"
+					:class="`host-button ${inSyncClass(host)}`"
           @click="emit('hostSelected', host.id)"
         >
           <div :class="['flex', 'flex-row']">
@@ -70,7 +70,6 @@ function inSyncClass(host) {
   text-align: left;
   border: 1px solid #ccc;
   border-radius: 5px;
-  background-color: #f9f9f9;
   cursor: pointer;
   transition: background-color 0.3s;
 }

@@ -16,55 +16,17 @@ function nrOfChildren(filesystem) {
 }
 
 function inSyncClass(filesystem) {
+  if (filesystem.backup_parent != null) {
+	   return "bg-blue-200"
+	}
   if (filesystem.snapshots_in_sync === null) {
     return "";
   } else if (filesystem.snapshots_in_sync === true) {
-    return "green-button";
+    return "bg-green-200";
   } else {
-    return "red-button";
+    return 'bg-red-200';
   }
-  // if(filesystem)
-  // if(filesystem.snapshots_in_sync) {
-  // 	return 'green-button'
-  // }
-  // return 'red-button'
 }
-// function getButtonClass(fs) {
-//   if (noSpecialClassFilesystems.some(path => fs.filesystem.includes(path)) || exactMatchFilesystems.includes(fs.filesystem)) {
-//     return ''; // No special class for these filesystems
-//   }
-//   if (fs.manual_override) {
-//     const currentDate = new Date();
-//     const endDate = new Date(fs.manual_override_end_date);
-//
-//     if (currentDate > endDate) {
-//       // Manual override has expired
-//       fs.manual_override = false;
-//       fs.manual_override_end_date = null;
-//       this.clearExpiredOverride(fs); // Clear the override in the database
-//       return this.getColorClass(fs);
-//     } else {
-//       return 'orange-button';
-//     }
-//   }
-//   return this.getColorClass(fs);
-// }
-//
-// function getLabelClass(fs) {
-//   if (!fs.most_recent_snapshot) {
-//     return ""; // No label if there's no snapshot
-//   }
-//   const snapshotName = fs.most_recent_snapshot.toLowerCase();
-//   if (snapshotName.includes("zas")) {
-//     return "zas";
-//   }
-//   return "zab";
-// }
-// isBillable(fs) {
-//   const billableValue = fs.properties && (fs.properties['grit:billable'] === 'true' || fs.properties['grit:billable'] === 'yes');
-//   return billableValue;
-// }
-//
 </script>
 
 <template>
@@ -122,7 +84,6 @@ function inSyncClass(filesystem) {
   text-align: left;
   border: 1px solid #ccc;
   border-radius: 5px;
-  background-color: #f9f9f9;
   cursor: pointer;
   transition: background-color 0.3s;
 }
