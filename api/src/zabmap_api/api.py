@@ -13,7 +13,7 @@ from peewee import fn, JOIN
 from playhouse.flask_utils import PaginatedQuery
 from playhouse.shortcuts import model_to_dict
 import logging
-from zabmap_api.db import Host, Filesystem
+from zabmap_api.db import Host, Filesystem, MetaData
 
 
 app = Flask(__name__)
@@ -52,6 +52,19 @@ def get_db_connection():
     )
     return conn
 
+@app.route("/api/last_updated", methods=["GET"])
+def get_last_updated():
+    try:
+        last_updated = MetaData.select().where(MetaData.key == "last_updated").first()
+         
+        return jsonify(model_to_dict(last_updated))
+
+
+        hosts = [model_to_dict(el) for el in hosts_query]
+        return jsonify(hosts)
+    except Exception as e:
+        app.logger.error(f"Error fetching hosts: {e}")
+        return jsonify({"error": "Internal server error"}), 500
 
 @app.route("/api/hosts", methods=["GET"])
 def get_hosts():
@@ -61,7 +74,7 @@ def get_hosts():
         hosts = [model_to_dict(el) for el in hosts_query]
         return jsonify(hosts)
     except Exception as e:
-        print(f"Error fetching hosts: {e}")
+        app.logger.error(f"Error fetching hosts: {e}")
         return jsonify({"error": "Internal server error"}), 500
 
 
@@ -79,18 +92,14 @@ def get_host_filesystems(host_id):
         filesystems = []
 
         for el in filesystem_query:
-            print(el)
             filesystem = model_to_dict(el, backrefs=True, max_depth=1)
-            print(filesystem)
-            # children = model_to_dict(snapshot.children)
-            # print(children)
 
             filesystems.append(filesystem)
 
         return jsonify(filesystems)
 
     except Exception as e:
-        print(f"Error fetching filesystems with host_id {host_id}: {e}")
+        app.logger.error(f"Error fetching filesystems with host_id {host_id}: {e}")
         return jsonify({"error": "Internal server error"}), 500
 
 
@@ -112,7 +121,7 @@ def get_filesystem(filesystem_id):
         return jsonify(filesystem)
 
     except Exception as e:
-        print(f"Error fetching filesystem with id {filesystem_id}: {e}")
+        app.logger.error(f"Error fetching filesystem with id {filesystem_id}: {e}")
         return jsonify({"error": "Internal server error"}), 500
 
 
