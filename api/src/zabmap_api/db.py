@@ -71,7 +71,7 @@ class Filesystem(Model):
     id = PrimaryKeyField()
     host = ForeignKeyField(model=Host, backref="filesystems")
     path = CharField()
-    parent = ForeignKeyField("self", null=True, backref="backups")
+    backup_parent = ForeignKeyField("self", null=True, backref="backups")
     latest_snapshot = DateTimeField()
     snapshots_in_sync = BooleanField(default=None)
     disabled = BooleanField(default=None)

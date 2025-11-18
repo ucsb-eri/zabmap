@@ -98,7 +98,7 @@ def update_sync_status():
         Parent = Filesystem.alias()
         filesystems = (
             Filesystem.select(Filesystem, Parent)
-            .join(Parent, JOIN.LEFT_OUTER, on=(Filesystem.parent_id == Parent.id))
+            .join(Parent, JOIN.LEFT_OUTER, on=(Filesystem.backup_parent_id == Parent.id))
             .where((Filesystem.host == host))
         )
 
@@ -189,22 +189,16 @@ def update_parents():
             server_props = parse_server_prop(
                 filesystem.zfs_properties.get("zab:server", "")
             )
-            path = filesystem.backups[0].path if len(filesystem.backups) > 0 else ""
-            backup_type = extract_backup_type(path)
-            replications = len(server_props)
-
-            Filesystem.update(
-                {
-                    Filesystem.replications: replications,
-                    Filesystem.backup_type: backup_type,
-                }
-            ).where(Filesystem.id == filesystem.id).execute()
 
             # In the past we incorrectly set parents for some filesystems. We should clear them out if they are set
             clear_parents = False
             for host, path in server_props:
+                # ic(host)
+                # ic(filesystem.host.name)
+                # ic(path)
 
                 if host == filesystem.host.name:
+                    print('************************* in if')
                     clear_parents = True
 
                 else:
@@ -227,23 +221,37 @@ def update_parents():
                     )
 
                     if remote_fs:
-                        Filesystem.update({Filesystem.parent: filesystem}).where(
+                        Filesystem.update({Filesystem.backup_parent: filesystem}).where(
                             Filesystem.id == remote_fs.id
                         ).execute()
 
             if clear_parents:
+                ic(filesystem.host.name)
+                ic(filesystem.path)
+                ic(len(filesystem.backups))
                 for backup in filesystem.backups:
                     ic(backup)
-                    Filesystem.update({Filesystem.parent: None}).where(
+                    Filesystem.update({Filesystem.backup_parent: None}).where(
                         Filesystem.id == backup.id
                     ).execute()
 
+        for filesystem in filesystems:
+            backup_path = filesystem.backups[0].path if len(filesystem.backups) > 0 else ""
+            backup_type = extract_backup_type(backup_path)
+            replications = len(filesystem.backups)
+
+            Filesystem.update(
+                {
+                    Filesystem.replications: replications,
+                    Filesystem.backup_type: backup_type,
+                }
+            ).where(Filesystem.id == filesystem.id).execute()
 
 def run():
-    ic("update hosts")
-    update_hosts()
-    ic("update filesystems")
-    update_filesystems()
+    # ic("update hosts")
+    # update_hosts()
+    # ic("update filesystems")
+    # update_filesystems()
     ic("update parents")
     update_parents()
     ic("update sync status")
