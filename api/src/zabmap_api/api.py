@@ -26,10 +26,11 @@ with app.app_context():
     from zabmap_api.db import ZfsSnapshots
     from apscheduler.schedulers.background import BackgroundScheduler
     from .scheduler import run
-
-    # scheduler = BackgroundScheduler()
-    # scheduler.add_job(func=run, trigger="interval", minutes=10)
-    # scheduler.start()
+ 
+    if app.config["BACKGROUND_UPDATE"]:
+        scheduler = BackgroundScheduler()
+        scheduler.add_job(func=run, trigger="interval", hours=1)
+        scheduler.start()
 
 CORS(
     app,
@@ -92,7 +93,7 @@ def get_host_filesystems(host_id):
         filesystems = []
 
         for el in filesystem_query:
-            filesystem = model_to_dict(el, backrefs=True, max_depth=1)
+            filesystem = model_to_dict(el, backrefs=True, max_depth=2)
 
             filesystems.append(filesystem)
 

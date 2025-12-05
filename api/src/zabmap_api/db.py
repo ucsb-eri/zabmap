@@ -50,8 +50,6 @@ class ZfsSnapshots(BaseModel):
     last_run = DateTimeField()
     used_space = CharField()
     disabled = BooleanField(default=False)
-    in_sync = BooleanField(default=False)
-    parent = ForeignKeyField("self", null=True, backref="children")
 
 
 class Host(BaseModel):

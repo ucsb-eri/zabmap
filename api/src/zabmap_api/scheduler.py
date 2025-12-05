@@ -1,5 +1,5 @@
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from icecream import ic
@@ -42,8 +42,10 @@ def hostnames():
     # TODO: Remove where clause when done testing
     hosts_query = ZfsSnapshots.select(fn.Distinct(ZfsSnapshots.hostname))
     # .where(
-    #     (ZfsSnapshots.hostname == "tjaart-linstor1.grit.ucsb.edu")
-    #     | (ZfsSnapshots.hostname == "tjaart-linstor2.grit.ucsb.edu")
+    #     (
+            # ZfsSnapshots.hostname == "agwe.eri.ucsb.edu"
+            # | (ZfsSnapshots.hostname == "ember.eri.ucsb.edu")
+        # )
     # )
     return [el.hostname for el in hosts_query]
 
@@ -90,6 +92,17 @@ def update_filesystems():
             Host.id == host.id
         ).execute()
 
+def ignore_filesystems():
+    ignored_filesystems = ['raid', "raid/one", "raid/r", 'raid/r1', "raida/r1", "raid/r.r", 'raidb/r1', 'raidb/r.r']
+
+    filesystems = Filesystem.select()
+
+    for filesystem in filesystems:
+        if filesystem.path in ignored_filesystems:
+            Filesystem.update({Filesystem.ignore_backup_state: True}).where(
+                Filesystem.id == filesystem.id
+            ).execute()
+
 
 def update_sync_status():
     for hostname in hostnames():
@@ -98,7 +111,9 @@ def update_sync_status():
         Parent = Filesystem.alias()
         filesystems = (
             Filesystem.select(Filesystem, Parent)
-            .join(Parent, JOIN.LEFT_OUTER, on=(Filesystem.backup_parent_id == Parent.id))
+            .join(
+                Parent, JOIN.LEFT_OUTER, on=(Filesystem.backup_parent_id == Parent.id)
+            )
             .where((Filesystem.host == host))
         )
 
@@ -123,14 +138,18 @@ def update_sync_status():
                     for backup in filesystem.backups:
                         if (
                             backup.latest_snapshot
-                            and filesystem.latest_snapshot == backup.latest_snapshot
+                            and filesystem.latest_snapshot
+                            and abs(filesystem.latest_snapshot - backup.latest_snapshot)
+                            < timedelta(days=1)
                         ):
                             backups_in_sync_arr.append(True)
                         else:
                             backups_in_sync_arr.append(False)
 
                     backups_in_sync = (
-                        all(backups_in_sync_arr) if len(backups_in_sync_arr) > 0 else None
+                        all(backups_in_sync_arr)
+                        if len(backups_in_sync_arr) > 0
+                        else None
                     )
             host_in_sync_arr.append(backups_in_sync)
             Filesystem.update({Filesystem.snapshots_in_sync: backups_in_sync}).where(
@@ -181,25 +200,46 @@ def update_parents():
     for hostname in hostnames():
         host = Host.select().where(Host.name == hostname).first()
 
-        filesystems = Filesystem.select().where(
-            (Filesystem.host == host) & (Filesystem.disabled == False)
+        Parent = Filesystem.alias()
+        filesystems = (
+            Filesystem.select(Filesystem, Parent)
+            .join(
+                Parent, JOIN.LEFT_OUTER, on=(Filesystem.backup_parent_id == Parent.id)
+            )
+            .where((Filesystem.host == host) & (Filesystem.disabled == False))
         )
 
+        # filesystems = Filesystem.select().where(
+        #     (Filesystem.host == host) & (Filesystem.disabled == False)
+        # )
+
         for filesystem in filesystems:
+            # ic(filesystem.path)
             server_props = parse_server_prop(
                 filesystem.zfs_properties.get("zab:server", "")
             )
+            # ic(server_props)
 
-            # In the past we incorrectly set parents for some filesystems. We should clear them out if they are set
-            clear_parents = False
             for host, path in server_props:
-                # ic(host)
-                # ic(filesystem.host.name)
-                # ic(path)
 
-                if host == filesystem.host.name:
-                    print('************************* in if')
-                    clear_parents = True
+                # Clear parents
+                if host == filesystem.host.name or host == "localhost:":
+                    ic(host)
+                    ic(filesystem.host.name)
+                    ic(filesystem.path)
+                    ic("-----")
+
+                    Filesystem.update({Filesystem.ignore_backup_state: True}).where(
+                        Filesystem.id == filesystem.id
+                    ).execute()
+
+                    for backup in filesystem.backups:
+                        Filesystem.update(
+                            {
+                                Filesystem.backup_parent: None,
+                                Filesystem.ignore_backup_state: True,
+                            }
+                        ).where(Filesystem.id == backup.id).execute()
 
                 else:
                     # TODO: Not sure that this is universally correct, but at GRIT we remove the 1st part of the path
@@ -211,6 +251,10 @@ def update_parents():
                     remote_path = f"{path}/{filesystem_rem}"
                     # print(remote_path)
                     remote_host = Host.select().where(Host.name == host).first()
+                    # ic(host)
+                    # ic(remote_host)
+                    # ic(remote_path)
+                    # ic('-----------')
                     remote_fs = (
                         Filesystem.select()
                         .where(
@@ -219,26 +263,22 @@ def update_parents():
                         )
                         .first()
                     )
+                    # ic(remote_fs)
 
                     if remote_fs:
                         Filesystem.update({Filesystem.backup_parent: filesystem}).where(
                             Filesystem.id == remote_fs.id
                         ).execute()
 
-            if clear_parents:
-                ic(filesystem.host.name)
-                ic(filesystem.path)
-                ic(len(filesystem.backups))
-                for backup in filesystem.backups:
-                    ic(backup)
-                    Filesystem.update({Filesystem.backup_parent: None}).where(
-                        Filesystem.id == backup.id
-                    ).execute()
-
         for filesystem in filesystems:
-            backup_path = filesystem.backups[0].path if len(filesystem.backups) > 0 else ""
+            backup_path = (
+                filesystem.backups[0].path if len(filesystem.backups) > 0 else ""
+            )
             backup_type = extract_backup_type(backup_path)
-            replications = len(filesystem.backups)
+            replications = len(
+                parse_server_prop(filesystem.zfs_properties.get("zab:server", ""))
+            )
+            # replications = len(filesystem.backups)
 
             Filesystem.update(
                 {
@@ -247,11 +287,14 @@ def update_parents():
                 }
             ).where(Filesystem.id == filesystem.id).execute()
 
+
 def run():
-    # ic("update hosts")
-    # update_hosts()
-    # ic("update filesystems")
-    # update_filesystems()
+    ic("update hosts")
+    update_hosts()
+    ic("update filesystems")
+    update_filesystems()
+    ic("ignore filesystems")
+    ignore_filesystems()
     ic("update parents")
     update_parents()
     ic("update sync status")
