@@ -16,6 +16,9 @@ function nrOfChildren(filesystem) {
 }
 
 function inSyncClass(filesystem) {
+  if (filesystem.ignore_backup_state != null) {
+	   return "bg-gray-200"
+	}
   if (filesystem.backup_parent != null) {
 	   return "bg-blue-200"
 	}
