@@ -27,7 +27,7 @@ with app.app_context():
     from apscheduler.schedulers.background import BackgroundScheduler
     from .scheduler import run
  
-    if app.config["BACKGROUND_UPDATE"]:
+    if app.config.get("BACKGROUND_UPDATE"):
         scheduler = BackgroundScheduler()
         scheduler.add_job(func=run, trigger="interval", hours=1)
         scheduler.start()
