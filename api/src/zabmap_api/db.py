@@ -1,3 +1,4 @@
+from enum import Enum
 import os
 
 from flask import current_app
@@ -12,15 +13,16 @@ from peewee import (
     PrimaryKeyField,
 )
 from playhouse.postgres_ext import JSONField
+from playhouse.pool import PooledPostgresqlDatabase
 
-psql_db = PostgresqlDatabase(
+psql_db = PooledPostgresqlDatabase(
     host=os.environ["FLASK_DB_HOST"],
     database=os.environ["FLASK_DB"],
     user=os.environ["FLASK_DB_USER"],
     password=os.environ["FLASK_DB_PASSWORD"],
+    max_connections=8,
+    stale_timeout=300,  # 5 minutes: close connections older than this
 )
-
-from enum import Enum
 
 
 class BackupType(Enum):
@@ -75,7 +77,7 @@ class Filesystem(Model):
     disabled = BooleanField(default=None)
     zfs_properties = JSONField()
     replications = IntegerField(default=0)
-    backup_type = CharField(default = None)
+    backup_type = CharField(default=None)
     ignore_backup_state = BooleanField(default=None)
 
 
