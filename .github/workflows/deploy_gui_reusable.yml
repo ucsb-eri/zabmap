@@ -1,27 +1,26 @@
-name: Deploy GUI
+name: Deploy GUI (reusable)
 
 on:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - 'gui/**'
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
 
 jobs:
   deploy:
     runs-on: [self-hosted, deploy]
-    environment: production
+    environment: ${{ inputs.environment }}
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
       - name: install dependencies
         run: |
           cd gui
-          npm install --omit=dev
+          npm install --omit=dev --cache /tmp/npm-cache
       - name: build the site
         run: |
           cd gui
@@ -37,5 +36,5 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "gui/dist/*"
           strip_components: 2
-          target: /opt/grit/zabmap/gui
+          target: "${{ vars.DEPLOY_PATH }}/gui"
           rm: true

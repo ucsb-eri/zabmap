@@ -1,0 +1,16 @@
+name: Deploy GUI (dev)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'gui/**'
+      - '.github/workflows/**'
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/deploy_gui_reusable.yml
+    with:
+      environment: development
+    secrets: inherit

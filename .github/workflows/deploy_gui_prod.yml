@@ -1,0 +1,13 @@
+name: Deploy GUI (prod)
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/deploy_gui_reusable.yml
+    with:
+      environment: production
+    secrets: inherit

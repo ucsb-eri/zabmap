@@ -1,20 +1,19 @@
-name: Deploy API
+name: Deploy API (reusable)
 
 on:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - 'api/**'
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
 
 jobs:
   deploy:
     runs-on: [self-hosted, deploy]
-    environment: production
+    environment: ${{ inputs.environment }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: copy repository
         uses: appleboy/scp-action@v1
         with:
@@ -22,7 +21,7 @@ jobs:
           username: ${{ vars.USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "api/*"
-          target: /opt/grit/zabmap/api
+          target: "${{ vars.DEPLOY_PATH }}/api"
           strip_components: 1
           rm: true
       - name: install dependencies
@@ -32,8 +31,8 @@ jobs:
           username: ${{ vars.USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /opt/grit/zabmap/api
-            /gritadm/.local/bin/uv sync
+            cd "${{ vars.DEPLOY_PATH }}/api"
+            ~/.local/bin/uv sync
       - name: restart the service
         uses: appleboy/ssh-action@v1
         with:
@@ -41,4 +40,4 @@ jobs:
           username: ${{ vars.USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            sudo systemctl restart zabmap.service
+            systemctl --user restart zabmap.service
