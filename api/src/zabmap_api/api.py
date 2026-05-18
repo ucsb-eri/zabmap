@@ -1,20 +1,19 @@
-from flask import Flask, jsonify, request
-import requests
-import psycopg2
-from flask_cors import CORS
-import logging
 import json
-from datetime import datetime
+import logging
 import os
-import tomllib
 import re
+import tomllib
+from datetime import datetime
 
-from peewee import fn, JOIN
+import psycopg2
+import requests
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+from peewee import JOIN, fn
 from playhouse.flask_utils import PaginatedQuery
 from playhouse.shortcuts import model_to_dict
-import logging
-from zabmap_api.db import Host, Filesystem, MetaData
 
+from zabmap_api.db import Filesystem, Host, MetaData
 
 app = Flask(__name__)
 app.config.from_prefixed_env()
@@ -23,8 +22,10 @@ logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("peewee").setLevel(logging.INFO)
 
 with app.app_context():
-    from zabmap_api.db import ZfsSnapshots
     from apscheduler.schedulers.background import BackgroundScheduler
+
+    from zabmap_api.db import ZfsSnapshots
+
     from .scheduler import run
  
     if app.config.get("BACKGROUND_UPDATE"):

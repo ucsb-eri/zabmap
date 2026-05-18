@@ -1,5 +1,5 @@
-from enum import Enum
 import os
+from enum import Enum
 
 from flask import current_app
 from peewee import (
@@ -12,8 +12,8 @@ from peewee import (
     PostgresqlDatabase,
     PrimaryKeyField,
 )
-from playhouse.postgres_ext import JSONField
 from playhouse.pool import PooledPostgresqlDatabase
+from playhouse.postgres_ext import JSONField
 
 psql_db = PooledPostgresqlDatabase(
     host=os.environ["FLASK_DB_HOST"],
