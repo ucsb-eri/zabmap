@@ -10,6 +10,14 @@ const userManager = new UserManager({
   userStore: new WebStorageStateStore({ store: window.localStorage }),
 });
 
+// If background renewal ever fails (e.g. refresh token revoked), clear the
+// stored user so the next navigation triggers a fresh interactive login
+// instead of letting fetches spin on an expired token.
+userManager.events.addSilentRenewError((err) => {
+  console.warn("OIDC silent renew failed; clearing user", err);
+  userManager.removeUser();
+});
+
 export default userManager;
 
 export function login() {
@@ -24,15 +32,12 @@ export function getUser() {
   return userManager.getUser();
 }
 
+// Returns the current access token, or null if there isn't a valid one.
+// Does NOT trigger silent renewal — automaticSilentRenew handles that in the
+// background. If the token is gone/expired, the router guard will redirect
+// on the next navigation; fetches will simply fail with 401.
 export async function getAccessToken() {
-  let user = await userManager.getUser();
-  if (!user || user.expired) {
-    try {
-      user = await userManager.signinSilent();
-    } catch {
-      await userManager.signinRedirect();
-      return null;
-    }
-  }
-  return user?.access_token ?? null;
+  const user = await userManager.getUser();
+  if (!user || user.expired) return null;
+  return user.access_token;
 }

@@ -6,7 +6,7 @@ import AuthCallback from "@/auth/AuthCallback.vue";
 import userManager, { login } from "@/auth/userManager";
 
 const routes = [
-  { path: "/auth/callback", component: AuthCallback, meta: { public: true } },
+  { path: "/auth/callback", components: { HostsView: AuthCallback }, meta: { public: true } },
   { path: "/", components: { HostsView } },
   {
     path: "/hosts/:hostId/filesystems",

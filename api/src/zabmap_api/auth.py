@@ -10,8 +10,8 @@ _jwks_client = None
 def _get_jwks_client():
     global _jwks_client
     if _jwks_client is None:
-        issuer = current_app.config["OIDC_ISSUER"].rstrip("/")
-        _jwks_client = PyJWKClient(f"{issuer}/jwks/")
+        base = current_app.config["OIDC_ISSUER"].rstrip("/")
+        _jwks_client = PyJWKClient(f"{base}/jwks/")
     return _jwks_client
 
 
@@ -26,7 +26,8 @@ def require_auth(fn):
             return jsonify({"error": "missing bearer token"}), 401
         token = header[len("Bearer "):].strip()
 
-        issuer = current_app.config["OIDC_ISSUER"].rstrip("/")
+        # Must match the JWT's `iss` claim character-for-character (trailing slash and all).
+        issuer = current_app.config["OIDC_ISSUER"]
         audience = current_app.config["OIDC_AUDIENCE"]
 
         try:
