@@ -17,6 +17,7 @@ dependencies = [
 "logging",
 "peewee",
 "psycopg2",
+"pyjwt[crypto]",
 "requests",
 ]
 

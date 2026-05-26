@@ -13,6 +13,7 @@ from peewee import JOIN, fn
 from playhouse.flask_utils import PaginatedQuery
 from playhouse.shortcuts import model_to_dict
 
+from zabmap_api.auth import require_auth
 from zabmap_api.db import Filesystem, Host, MetaData
 
 app = Flask(__name__)
@@ -55,6 +56,7 @@ def get_db_connection():
     return conn
 
 @app.route("/api/last_updated", methods=["GET"])
+@require_auth
 def get_last_updated():
     try:
         last_updated = MetaData.select().where(MetaData.key == "last_updated").first()
@@ -69,6 +71,7 @@ def get_last_updated():
         return jsonify({"error": "Internal server error"}), 500
 
 @app.route("/api/hosts", methods=["GET"])
+@require_auth
 def get_hosts():
     try:
         hosts_query = Host.select()
@@ -81,6 +84,7 @@ def get_hosts():
 
 
 @app.route("/api/hosts/<host_id>/filesystems", methods=["GET"])
+@require_auth
 def get_host_filesystems(host_id):
     try:
         # Parent = Filesystem.alias()
@@ -106,6 +110,7 @@ def get_host_filesystems(host_id):
 
 
 @app.route("/api/filesystems/<filesystem_id>", methods=["GET"])
+@require_auth
 def get_filesystem(filesystem_id):
     try:
         Parent = Filesystem.alias()
@@ -128,6 +133,7 @@ def get_filesystem(filesystem_id):
 
 
 @app.route("/api/hosts/<host>/backupstatus", methods=["GET"])
+@require_auth
 def get_backupstatus(host):
     # query = ZfsSnapshots.select(ZfsSnapshots.id, ZfsSnapshots.hostname, ZfsSnapshots.filesystem, ZfsSnapshots.most_recent_snapshot, ZfsSnapshots.parent)
 

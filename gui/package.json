@@ -19,6 +19,7 @@
     "axios": "^1.7.2",
     "core-js": "^3.8.3",
     "javascript-time-ago": "^2.5.12",
+    "oidc-client-ts": "^3.1.0",
     "tailwindcss": "^4.1.16",
     "vue": "^3.2.13",
     "vue-router": "^4.0.13"

@@ -1,7 +1,7 @@
 <script setup>
 import router from '@/router'
 import HostsList from '@/components/HostsList.vue';
-import { useFetch } from "@vueuse/core";
+import { useAuthedFetch } from "@/auth/authedFetch";
 import { toRef } from "vue";
 
 const hostFilter = defineModel()
@@ -16,7 +16,7 @@ const {
   isFetching,
   error,
   data: hosts,
-} = await useFetch(`${import.meta.env.VITE_API_URL}/api/hosts`, {
+} = await useAuthedFetch(`${import.meta.env.VITE_API_URL}/api/hosts`, {
   initialData: { results: [] },
 })
   .get()

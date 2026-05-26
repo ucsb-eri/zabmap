@@ -28,6 +28,9 @@ jobs:
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
           VITE_BASE_URL: ${{ vars.VITE_BASE_URL }}
+          VITE_OIDC_AUTHORITY: ${{ vars.VITE_OIDC_AUTHORITY }}
+          VITE_OIDC_CLIENT_ID: ${{ vars.VITE_OIDC_CLIENT_ID }}
+          VITE_OIDC_REDIRECT_URI: ${{ vars.VITE_OIDC_REDIRECT_URI }}
       - name: copy build to the server
         uses: appleboy/scp-action@v1
         with:

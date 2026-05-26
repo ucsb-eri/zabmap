@@ -1,5 +1,5 @@
 <script setup>
-import { useFetch } from "@vueuse/core";
+import { useAuthedFetch } from "@/auth/authedFetch";
 import { ref, toRef, watch } from "vue";
 const props = defineProps({
   hostId: String,
@@ -20,7 +20,7 @@ const {
   isFetching,
   error,
   data: filesystem,
-} = await useFetch(url, { initialData: { results: [] }, refetch: true })
+} = await useAuthedFetch(url, { initialData: { results: [] }, refetch: true })
   .get()
   .json();
 
@@ -31,7 +31,7 @@ const {
   isFetching: parentFetching,
   error: parentError,
   data: parent,
-} = await useFetch(parentUrl, { initialData: { results: [] }, refetch: true })
+} = await useAuthedFetch(parentUrl, { initialData: { results: [] }, refetch: true })
   .get()
   .json();
 }
@@ -41,7 +41,7 @@ const {
 //   isFetching,
 //   error,
 //   data,
-// } = await useFetch(url, { initialData: { results: [] }, refetch: true })
+// } = await useAuthedFetch(url, { initialData: { results: [] }, refetch: true })
 //   .get()
 //   .json();
 //    	console.log(data)

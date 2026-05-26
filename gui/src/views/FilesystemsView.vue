@@ -3,7 +3,7 @@ import router from "@/router";
 import HostsView from "@/views/HostsView.vue";
 import FilesystemsList from "@/components/FilesystemsList.vue";
 import TooltipLegend from "@/components/TooltipLegend.vue";
-import { useFetch } from "@vueuse/core";
+import { useAuthedFetch } from "@/auth/authedFetch";
 import { ref, watch, toRef } from "vue";
 
 const filesystemFilter = defineModel();
@@ -25,7 +25,7 @@ const {
   isFetching,
   error,
   data: filesystems,
-} = await useFetch(url, { initialData: { results: [] }, refetch: true })
+} = await useAuthedFetch(url, { initialData: { results: [] }, refetch: true })
   .get()
   .json();
 
