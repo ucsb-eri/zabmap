@@ -1,11 +1,13 @@
 <script setup>
 import Loader from "@/components/Loader.vue";
 import LastUpdated from "@/components/LastUpdated.vue";
+import UserMenu from "@/auth/UserMenu.vue";
 </script>
 
 <template>
   <div id="app">
-    <div  class="flex flex-row-reverse pr-2">
+    <div  class="flex flex-row-reverse items-center gap-4 pr-2">
+      <UserMenu />
       <Suspense>
         <LastUpdated></LastUpdated>
         <template #fallback><Loader /> </template>

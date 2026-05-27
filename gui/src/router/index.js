@@ -3,10 +3,12 @@ import HostsView from "@/views/HostsView.vue";
 import FilesystemsView from "@/views/FilesystemsView.vue";
 import PropertiesView from "@/views/PropertiesView.vue";
 import AuthCallback from "@/auth/AuthCallback.vue";
+import SignedOut from "@/auth/SignedOut.vue";
 import userManager, { login } from "@/auth/userManager";
 
 const routes = [
   { path: "/auth/callback", components: { HostsView: AuthCallback }, meta: { public: true } },
+  { path: "/signed-out", components: { HostsView: SignedOut }, meta: { public: true } },
   { path: "/", components: { HostsView } },
   {
     path: "/hosts/:hostId/filesystems",

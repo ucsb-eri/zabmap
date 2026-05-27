@@ -4,6 +4,9 @@ const userManager = new UserManager({
   authority: import.meta.env.VITE_OIDC_AUTHORITY,
   client_id: import.meta.env.VITE_OIDC_CLIENT_ID,
   redirect_uri: import.meta.env.VITE_OIDC_REDIRECT_URI,
+  post_logout_redirect_uri:
+    import.meta.env.VITE_OIDC_POST_LOGOUT_REDIRECT_URI ||
+    `${window.location.origin}/signed-out`,
   response_type: "code",
   scope: "openid profile email offline_access",
   automaticSilentRenew: true,
