@@ -1,7 +1,6 @@
 import os
 from enum import Enum
 
-from flask import current_app
 from peewee import (
     BooleanField,
     CharField,
@@ -9,19 +8,31 @@ from peewee import (
     ForeignKeyField,
     IntegerField,
     Model,
-    PostgresqlDatabase,
     PrimaryKeyField,
 )
 from playhouse.pool import PooledPostgresqlDatabase
 from playhouse.postgres_ext import JSONField
 
-psql_db = PooledPostgresqlDatabase(
+# Source DB: holds the raw incoming ZfsSnapshots written by upstream tooling.
+# zabmap only reads from here (the scheduler reads, the /api/backupstatus endpoint reads).
+source_db = PooledPostgresqlDatabase(
+    host=os.environ["FLASK_SOURCE_DB_HOST"],
+    database=os.environ["FLASK_SOURCE_DB"],
+    user=os.environ["FLASK_SOURCE_DB_USER"],
+    password=os.environ["FLASK_SOURCE_DB_PASSWORD"],
+    max_connections=8,
+    stale_timeout=300,
+)
+
+# Internal DB (the "main" zabmap DB): derived tables (Host, Filesystem, MetaData)
+# built by the scheduler from ZfsSnapshots and served by the API.
+internal_db = PooledPostgresqlDatabase(
     host=os.environ["FLASK_DB_HOST"],
     database=os.environ["FLASK_DB"],
     user=os.environ["FLASK_DB_USER"],
     password=os.environ["FLASK_DB_PASSWORD"],
     max_connections=8,
-    stale_timeout=300,  # 5 minutes: close connections older than this
+    stale_timeout=300,
 )
 
 
@@ -31,15 +42,19 @@ class BackupType(Enum):
     ZAS = "zas"
 
 
-class BaseModel(Model):
-    """A base model that will use our Postgresql database"""
-
+class SourceModel(Model):
     class Meta:
-        database = psql_db
+        database = source_db
         legacy_table_names = False
 
 
-class ZfsSnapshots(BaseModel):
+class InternalModel(Model):
+    class Meta:
+        database = internal_db
+        legacy_table_names = False
+
+
+class ZfsSnapshots(SourceModel):
     id = PrimaryKeyField()
     hostname = CharField()
     filesystem = CharField()
@@ -54,7 +69,7 @@ class ZfsSnapshots(BaseModel):
     disabled = BooleanField(default=False)
 
 
-class Host(BaseModel):
+class Host(InternalModel):
     id = PrimaryKeyField()
     name = CharField(unique=True)
     snapshots_in_sync = BooleanField(default=None)
@@ -62,11 +77,11 @@ class Host(BaseModel):
     replication_count = JSONField()
 
 
-class Filesystem(Model):
+class Filesystem(InternalModel):
     class Meta:
-        database = psql_db
+        database = internal_db
         legacy_table_names = False
-        indexes = (("host", "path"), True)
+        indexes = ((("host", "path"), True),)
 
     id = PrimaryKeyField()
     host = ForeignKeyField(model=Host, backref="filesystems")
@@ -81,7 +96,7 @@ class Filesystem(Model):
     ignore_backup_state = BooleanField(default=None)
 
 
-class MetaData(BaseModel):
+class MetaData(InternalModel):
     id = PrimaryKeyField()
     key = CharField(unique=True)
     value = CharField()
