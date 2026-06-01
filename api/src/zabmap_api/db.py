@@ -12,10 +12,16 @@ from peewee import (
 )
 from playhouse.pool import PooledPostgresqlDatabase
 from playhouse.postgres_ext import JSONField
+from playhouse.shortcuts import ReconnectMixin
+
+
+class ResilientPooledPostgresqlDatabase(ReconnectMixin, PooledPostgresqlDatabase):
+    """Pooled Postgres that transparently reconnects on dead connections —
+    useful for long-idle background jobs where firewalls drop idle TCP."""
 
 # Source DB: holds the raw incoming ZfsSnapshots written by upstream tooling.
 # zabmap only reads from here (the scheduler reads, the /api/backupstatus endpoint reads).
-source_db = PooledPostgresqlDatabase(
+source_db = ResilientPooledPostgresqlDatabase(
     host=os.environ["FLASK_SOURCE_DB_HOST"],
     database=os.environ["FLASK_SOURCE_DB"],
     user=os.environ["FLASK_SOURCE_DB_USER"],
@@ -26,7 +32,7 @@ source_db = PooledPostgresqlDatabase(
 
 # Internal DB (the "main" zabmap DB): derived tables (Host, Filesystem, MetaData)
 # built by the scheduler from ZfsSnapshots and served by the API.
-internal_db = PooledPostgresqlDatabase(
+internal_db = ResilientPooledPostgresqlDatabase(
     host=os.environ["FLASK_DB_HOST"],
     database=os.environ["FLASK_DB"],
     user=os.environ["FLASK_DB_USER"],
@@ -72,9 +78,9 @@ class ZfsSnapshots(SourceModel):
 class Host(InternalModel):
     id = PrimaryKeyField()
     name = CharField(unique=True)
-    snapshots_in_sync = BooleanField(default=None)
-    filesystem_count = IntegerField()
-    replication_count = JSONField()
+    snapshots_in_sync = BooleanField(null=True)
+    filesystem_count = IntegerField(null=True)
+    replication_count = JSONField(null=True)
 
 
 class Filesystem(InternalModel):
@@ -87,13 +93,13 @@ class Filesystem(InternalModel):
     host = ForeignKeyField(model=Host, backref="filesystems")
     path = CharField()
     backup_parent = ForeignKeyField("self", null=True, backref="backups")
-    latest_snapshot = DateTimeField()
-    snapshots_in_sync = BooleanField(default=None)
-    disabled = BooleanField(default=None)
+    latest_snapshot = DateTimeField(null=True)
+    snapshots_in_sync = BooleanField(null=True)
+    disabled = BooleanField(null=True)
     zfs_properties = JSONField()
     replications = IntegerField(default=0)
-    backup_type = CharField(default=None)
-    ignore_backup_state = BooleanField(default=None)
+    backup_type = CharField(null=True)
+    ignore_backup_state = BooleanField(null=True)
 
 
 class MetaData(InternalModel):
