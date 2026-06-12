@@ -28,6 +28,9 @@ const router = createRouter({
 });
 
 router.beforeEach(async (to) => {
+  // Development escape hatch: set VITE_AUTH_DISABLED=true to skip the OIDC
+  // login redirect entirely. MUST stay false/unset in production.
+  if (import.meta.env.VITE_AUTH_DISABLED === "true") return true;
   if (to.meta.public) return true;
   const user = await userManager.getUser();
   if (!user || user.expired) {
