@@ -21,6 +21,12 @@ def require_auth(fn):
         if request.method == "OPTIONS":
             return fn(*args, **kwargs)
 
+        # Development escape hatch: set FLASK_AUTH_DISABLED=true to skip JWT
+        # validation entirely. MUST stay false/unset in production.
+        if current_app.config.get("AUTH_DISABLED"):
+            g.user = {"sub": "dev", "email": "dev@localhost", "dev": True}
+            return fn(*args, **kwargs)
+
         header = request.headers.get("Authorization", "")
         if not header.startswith("Bearer "):
             return jsonify({"error": "missing bearer token"}), 401
