@@ -54,10 +54,10 @@ def migrate(migrator, database, *, fake=False):
         value = pw.CharField(max_length=255)
 
         class Meta:
-            table_name = "metadata"
+            table_name = "meta_data"
 
 
 def rollback(migrator, database, *, fake=False):
-    migrator.remove_model("metadata")
+    migrator.remove_model("meta_data")
     migrator.remove_model("filesystem")
     migrator.remove_model("host")
