@@ -1,10 +1,19 @@
 @import "tailwindcss";
 
 @layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+  }
   h1 {
-    font-size: var(--text-2xl);
+    font-size: var(--text-lg);
+    font-weight: 600;
   }
   h2 {
-    font-size: var(--text-xl);
+    font-size: var(--text-base);
+    font-weight: 600;
+  }
+  /* The search boxes are plain <input type="text"> elements with no classes. */
+  input[type="text"] {
+    @apply w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm placeholder:text-slate-400 focus:border-blue-600 focus:outline-2 focus:outline-blue-600/30;
   }
 }

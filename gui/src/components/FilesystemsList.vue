@@ -1,12 +1,18 @@
 <script setup>
-import { toRef } from "vue";
+import { useRoute } from "vue-router";
+import StatusPill from "@/components/StatusPill.vue";
+import { filesystemStatus } from "@/config/statusConfig";
 
-const props = defineProps(["filesystems"]);
-const filesystems = toRef(props, "filesystems");
-
-const filesystemFilter = defineModel();
-
+defineProps(["filesystems"]);
 const emit = defineEmits(["filesystemSelected"]);
+
+// The open filesystem is in the URL, so the list can highlight it without
+// FilesystemsView having to pass anything down.
+const route = useRoute();
+
+function isSelected(filesystem) {
+  return String(filesystem.id) === String(route.params.filesystemId);
+}
 
 function nrOfChildren(filesystem) {
   if (!filesystem.backups) {
@@ -15,130 +21,51 @@ function nrOfChildren(filesystem) {
   return filesystem.backups.length;
 }
 
-function inSyncClass(filesystem) {
-  if (filesystem.ignore_backup_state != null) {
-	   return "bg-gray-200"
-	}
-  if (filesystem.backup_parent != null) {
-	   return "bg-blue-200"
-	}
-  if (filesystem.snapshots_in_sync === null) {
-    return "";
-  } else if (filesystem.snapshots_in_sync === true) {
-    return "bg-green-200";
-  } else {
-    return 'bg-red-200';
-  }
+// "Backups 1 of 2" only makes sense for filesystems that are expected to have
+// backups, so hide it for ignored filesystems, backup copies and unbacked ones.
+function showBackupCount(filesystem) {
+  return (
+    filesystem.replications > 0 &&
+    !["ignored", "copy"].includes(filesystemStatus(filesystem))
+  );
 }
 </script>
 
 <template>
-  <div>
-    <ul>
-      <li v-for="filesystem in filesystems" :key="filesystem.id">
-        <button
-          @click="emit('filesystemSelected', filesystem.id)"
-          :class="[
-            'filesystem-button',
-            inSyncClass(filesystem) /* getButtonClass(fs) */,
-          ]"
-        >
-          <div :class="['flex', 'flex-row']">
-            <div class="filesystem-name">{{ filesystem.path }}</div>
-            <div :class="['font-mono', 'min-w-20']">
-              <span
-                v-if="filesystem.ignore"
-                class="inline-flex items-center rounded-md bg-gray-600/10 px-2 py-1 text-xs font-medium text-black inset-ring inset-ring-gray-400/20"
-                >ignored</span
-              >
-            </div>
-            <div :class="['font-mono', 'min-w-20']">
-              <span
-                v-if="filesystem.backup_type"
-                class="inline-flex items-center rounded-md bg-gray-600/10 px-2 py-1 text-xs font-medium text-black inset-ring inset-ring-gray-400/20"
-                >{{ filesystem.backup_type }}</span
-              >
-            </div>
-            <div :class="['font-mono', 'min-w-[110px]', 'text-right']">
-              <span
-                class="inline-flex items-center rounded-md bg-gray-600/10 px-2 py-1 text-xs font-medium text-black inset-ring inset-ring-gray-400/20"
-              >
-                backups: {{ nrOfChildren(filesystem) }}/{{
-                  filesystem.replications
-                }}</span
-              >
-            </div>
-          </div>
-          <!-- <span v-if="isBillable(fs)" class="label">$</span> -->
-        </button>
-      </li>
-    </ul>
-  </div>
+  <ul class="divide-y divide-slate-200">
+    <li v-for="filesystem in filesystems" :key="filesystem.id">
+      <button
+        type="button"
+        class="block w-full cursor-pointer px-4 py-3 text-left hover:bg-slate-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-600"
+        :class="isSelected(filesystem) ? 'bg-blue-50 hover:bg-blue-50' : ''"
+        :aria-current="isSelected(filesystem) ? 'true' : undefined"
+        @click="emit('filesystemSelected', filesystem.id)"
+      >
+        <div class="flex items-center gap-2">
+          <span
+            class="min-w-0 grow break-all font-mono text-sm"
+            :class="isSelected(filesystem) ? 'font-semibold' : 'font-medium'"
+            >{{ filesystem.path }}</span
+          >
+          <span
+            v-if="filesystem.backup_type"
+            class="rounded border border-slate-200 px-1.5 font-mono text-xs text-slate-500"
+            >{{ filesystem.backup_type }}</span
+          >
+          <StatusPill :status="filesystemStatus(filesystem)" />
+        </div>
+        <div v-if="showBackupCount(filesystem)" class="mt-1 text-xs">
+          <span
+            :class="
+              nrOfChildren(filesystem) < filesystem.replications
+                ? 'font-medium text-amber-700'
+                : 'text-slate-500'
+            "
+            >Backups {{ nrOfChildren(filesystem) }} of
+            {{ filesystem.replications }}</span
+          >
+        </div>
+      </button>
+    </li>
+  </ul>
 </template>
-
-<style scoped>
-.filesystem-button {
-  display: block;
-  justify-content: space-between;
-  align-items: center;
-  margin: 5px 0;
-  padding: 10px;
-  width: 100%;
-  text-align: left;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.filesystem-button:hover {
-  background-color: #f0f0f0;
-}
-
-.filesystem-button:focus {
-  outline: none;
-  border-color: #007bff;
-}
-
-.red-button {
-  background-color: #ffcccc;
-}
-
-.yellow-button {
-  background-color: yellow;
-  color: black;
-}
-
-.green-button {
-  background-color: #ccffcc;
-}
-
-.orange-button {
-  background-color: #ffa500;
-}
-
-.filesystem-name {
-  flex-grow: 1;
-}
-
-.label {
-  margin-left: 10px;
-}
-
-.zas {
-  color: blue;
-}
-
-.zab {
-  color: green;
-}
-
-.sticky-header {
-  position: sticky;
-  top: 0;
-  background-color: white;
-  padding: 10px;
-  border-bottom: 1px solid #ccc;
-  z-index: 10;
-}
-</style>

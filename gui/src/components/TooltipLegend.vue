@@ -1,88 +1,60 @@
-<template>
-  <div class="tooltip-container">
-    <button @mouseover="showTooltip = true" @mouseleave="showTooltip = false" @click="toggleTooltip">
-      ?
-    </button>
-    <div v-if="showTooltip" class="tooltip-content">
-      <p><span class="color-box red"></span> Red: No recent snapshot or snapshot is older than 30 days.</p>
-      <p><span class="color-box orange"></span> Orange: Manually ignored, reason is avilable in the properties window.</p>
-      <p><span class="color-box yellow"></span> Yellow: Snapshot is not from today but less than 30 days old.</p>
-      <p><span class="color-box green"></span> Green: Snapshot is from today.</p>
-      <!-- Add more legend items as needed -->
-    </div>
-  </div>
-</template>
-
 <script>
+import StatusPill from "@/components/StatusPill.vue";
+import { STATUS } from "@/config/statusConfig";
+
 export default {
+  components: { StatusPill },
   data() {
     return {
-      showTooltip: false
+      hovering: false,
+      pinned: false,
+      STATUS,
+      // The statuses a filesystem can have, in the order they are explained.
+      order: ["synced", "unsynced", "none", "ignored", "copy"],
     };
   },
+  computed: {
+    open() {
+      return this.hovering || this.pinned;
+    },
+  },
   methods: {
-    toggleTooltip() {
-      this.showTooltip = !this.showTooltip;
-    }
-  }
+    togglePinned() {
+      this.pinned = !this.pinned;
+    },
+  },
 };
 </script>
 
-<style scoped>
-.tooltip-container {
-  position: fixed;
-  bottom: 10px;
-  right: 10px;
-  z-index: 1000;
-}
-
-.tooltip-container button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  cursor: pointer;
-  font-size: 18px;
-}
-
-.tooltip-content {
-  position: absolute;
-  bottom: 50px;
-  right: 0;
-  background-color: white;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  padding: 10px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  width: 300px; /* Set the width of the tooltip */
-  max-width: 90vw; /* Ensure it doesn't exceed the viewport width */
-  box-sizing: border-box;
-}
-
-.color-box {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  margin-right: 5px;
-}
-
-.color-box.red {
-  background-color: #ffcccc;
-}
-
-.color-box.yellow {
-  background-color: yellow;
-}
-
-.color-box.green {
-  background-color: #ccffcc;
-}
-
-.color-box.orange {
-  background-color: #ffa500;
-}
-
-</style>
-
+<template>
+  <div
+    class="fixed bottom-4 right-4 z-50"
+    @mouseenter="hovering = true"
+    @mouseleave="hovering = false"
+  >
+    <div v-if="open" class="absolute bottom-full right-0 pb-2">
+      <div
+        class="w-80 max-w-[90vw] rounded-lg border border-slate-200 bg-white p-4 text-left shadow-lg"
+      >
+        <h2 class="mb-3">Status legend</h2>
+        <dl class="grid gap-3">
+          <div v-for="key in order" :key="key">
+            <dt><StatusPill :status="key" /></dt>
+            <dd class="mt-1 text-sm text-slate-600">
+              {{ STATUS[key].description }}
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+    <button
+      type="button"
+      aria-label="Status legend"
+      :aria-expanded="open"
+      class="size-10 cursor-pointer rounded-full bg-blue-600 text-lg font-semibold text-white shadow-md hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+      @click="togglePinned"
+    >
+      ?
+    </button>
+  </div>
+</template>

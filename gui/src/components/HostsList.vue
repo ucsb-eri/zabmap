@@ -1,103 +1,53 @@
 <script setup>
-import { ref, watch, toRef } from "vue";
+import StatusPill from "@/components/StatusPill.vue";
+import { hostStatus } from "@/config/statusConfig";
 
-const props = defineProps(["hosts", "selectedHostId"]);
+// hostId is the host currently open in the URL (HostsView already passes it).
+const props = defineProps(["hosts", "hostId"]);
 const emit = defineEmits(["hostSelected"]);
 
-const hosts = toRef(props, "hosts");
-const selectedHostId = toRef(props, "selectedHostId");
+function isSelected(host) {
+  return String(host.id) === String(props.hostId);
+}
 
-watch(selectedHostId, (newVal, oldVal) => {
-  hosts.value = selectedHostId.value
-    ? props.hosts.filter((el) => el.id == selectedHostId)
-    : props.hosts;
-});
-
-function inSyncClass(host) {
-  return host.snapshots_in_sync ? "bg-green-200" : "bg-red-200";
+// replication_count looks like { r0: 1, r1: 1, r2: 3 }: how many filesystems
+// have 0, 1 or 2 backup copies. Spell it out instead of showing r0=1 r1=1 r2=3.
+// "0 copies" is deliberately neutral: a backup server's own filesystems have 0.
+function copiesSummary(host) {
+  const counts = host.replication_count ?? {};
+  const parts = [];
+  if (counts.r2) parts.push(`${counts.r2} with 2 copies`);
+  if (counts.r1) parts.push(`${counts.r1} with 1 copy`);
+  if (counts.r0) parts.push(`${counts.r0} with 0 copies`);
+  return parts.join(" · ");
 }
 </script>
 
 <template>
-  <div>
-    <ul>
-      <li v-for="host in hosts" :key="host">
-        <button
-					:class="`host-button ${inSyncClass(host)}`"
-          @click="emit('hostSelected', host.id)"
-        >
-          <div :class="['flex', 'flex-row']">
-            <div class="filesystem-name">{{ host.name }}</div>
-            <div :class="['flex', 'flex-row-reverse', 'grow']">
-              <!-- <div> -->
-              <span :class="['flex-initial', 'min-w-[150px]', 'text-right']">
-                <span
-                  class="inline-flex items-center rounded-md bg-gray-600/10 px-2 py-1 text-xs font-medium text-black inset-ring inset-ring-gray-400/20"
-                >
-                  <span
-                    class="font-mono"
-                    v-for="(value, key) in host.replication_count"
-                  >
-                    {{ key }}={{ value }}&nbsp;
-                    <!-- {{ /* getLabelClass(fs).toUpperCase() }} -->
-                  </span>
-                </span>
-              </span>
-              <span
-                :class="['font-mono', 'min-w-20']"
-                v-if="host.filesystem_count"
-              >
-                <span
-                  class="inline-flex items-center rounded-md bg-gray-600/10 px-2 py-1 text-xs font-medium text-black inset-ring inset-ring-gray-400/20"
-                  >fs: {{ host.filesystem_count }}</span
-                >
-              </span>
-              <!-- </div> -->
-            </div>
-          </div>
-        </button>
-      </li>
-    </ul>
-  </div>
+  <ul class="divide-y divide-slate-200">
+    <li v-for="host in hosts" :key="host.id">
+      <button
+        type="button"
+        class="block w-full cursor-pointer px-4 py-3 text-left hover:bg-slate-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-600"
+        :class="isSelected(host) ? 'bg-blue-50 hover:bg-blue-50' : ''"
+        :aria-current="isSelected(host) ? 'true' : undefined"
+        @click="emit('hostSelected', host.id)"
+      >
+        <div class="flex items-center gap-2">
+          <span
+            class="min-w-0 grow break-all font-mono text-sm"
+            :class="isSelected(host) ? 'font-semibold' : 'font-medium'"
+            >{{ host.name }}</span
+          >
+          <StatusPill :status="hostStatus(host)" />
+        </div>
+        <div class="mt-1 text-xs text-slate-500">
+          <span v-if="host.filesystem_count"
+            >{{ host.filesystem_count }} filesystems</span
+          >
+          <div v-if="copiesSummary(host)">{{ copiesSummary(host) }}</div>
+        </div>
+      </button>
+    </li>
+  </ul>
 </template>
-
-<style scoped>
-.host-button {
-  display: block;
-  margin: 5px 0;
-  padding: 10px;
-  width: 100%;
-  text-align: left;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.host-button:hover {
-  background-color: #f0f0f0;
-}
-
-.host-button:focus {
-  outline: none;
-  border-color: #007bff;
-}
-
-.green-button {
-  background-color: #ccffcc;
-}
-.red-button {
-  background-color: #ffcccc;
-}
-
-.yellow-button {
-  background-color: yellow;
-  color: black;
-}
-
-.selected-host {
-  background-color: #007bff;
-  color: white;
-  font-weight: bold;
-}
-</style>
