@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import tomllib
+from collections import defaultdict
 from datetime import datetime
 
 import psycopg2
@@ -83,6 +84,13 @@ def get_hosts():
         return jsonify({"error": "Internal server error"}), 500
 
 
+def _own_fields(filesystem):
+    """A filesystem's own columns, without the host / backup_parent foreign keys."""
+    data = model_to_dict(filesystem, recurse=False)
+    del data["host"], data["backup_parent"]
+    return data
+
+
 @app.route("/api/hosts/<host_id>/filesystems", methods=["GET"])
 @require_auth
 def get_host_filesystems(host_id):
@@ -93,16 +101,49 @@ def get_host_filesystems(host_id):
         #     .join(Parent, JOIN.LEFT_OUTER, on=(Filesystem.parent == Parent.id))
         #     .where(Filesystem.host_id == host_id)
         # )
-        filesystem_query = Filesystem.select().where(Filesystem.host_id == host_id)
+        # Load everything in three queries. Calling model_to_dict on each row
+        # lazily loaded its host, parent and backups one by one, which meant
+        # ~3000 queries for a host with 1000+ filesystems (#2).
+        on_host = Filesystem.select(Filesystem.id).where(Filesystem.host == host_id)
+        filesystems = (
+            Filesystem.select(Filesystem, Host)
+            .join(Host)
+            .where(Filesystem.host == host_id)
+        )
 
-        filesystems = []
+        backups = defaultdict(list)
+        for backup in (
+            Filesystem.select(Filesystem, Host)
+            .join(Host)
+            .where(Filesystem.backup_parent.in_(on_host))
+        ):
+            backups[backup.backup_parent_id].append(backup)
 
-        for el in filesystem_query:
-            filesystem = model_to_dict(el, backrefs=True, max_depth=2)
+        parent_ids = Filesystem.select(Filesystem.backup_parent).where(
+            Filesystem.host == host_id
+        )
+        parents = {
+            parent.id: parent
+            for parent in Filesystem.select().where(Filesystem.id.in_(parent_ids))
+        }
 
-            filesystems.append(filesystem)
+        # Same shape model_to_dict(backrefs=True, max_depth=2) produced.
+        response = []
+        for fs in filesystems:
+            filesystem = _own_fields(fs)
+            filesystem["host"] = model_to_dict(fs.host)
+            filesystem["backup_parent"] = (
+                _own_fields(parents[fs.backup_parent_id])
+                if fs.backup_parent_id
+                else None
+            )
+            filesystem["backups"] = [
+                {**_own_fields(b), "host": model_to_dict(b.host)}
+                for b in backups[fs.id]
+            ]
+            response.append(filesystem)
 
-        return jsonify(filesystems)
+        return jsonify(response)
 
     except Exception as e:
         app.logger.error(f"Error fetching filesystems with host_id {host_id}: {e}")
