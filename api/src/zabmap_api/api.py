@@ -118,6 +118,13 @@ def get_filesystem(filesystem_id):
         filesystem_query = Filesystem.get_by_id(filesystem_id)
 
         filesystem = model_to_dict(filesystem_query, backrefs=True)
+
+        # model_to_dict skips Filesystem.host on the nested parent (it was already
+        # traversed at the top level), so serialize the parent separately to keep its host.
+        if filesystem_query.backup_parent:
+            filesystem["backup_parent"] = model_to_dict(
+                filesystem_query.backup_parent, max_depth=1
+            )
         # for el in filesystem_query:
         #     filesystem = model_to_dict(el, backrefs=True)
         #     # children = model_to_dict(snapshot.children)
