@@ -6,7 +6,15 @@ from icecream import ic
 from peewee import JOIN, fn
 from playhouse.shortcuts import model_to_dict
 
-from zabmap_api.db import BackupType, Filesystem, Host, MetaData, ZfsSnapshots
+from zabmap_api.db import (
+    BackupType,
+    Filesystem,
+    Host,
+    MetaData,
+    ZfsSnapshots,
+    internal_db,
+    source_db,
+)
 
 # TODO: Disable debugging output
 # ic.disable()
@@ -289,15 +297,22 @@ def update_parents():
 
 
 def run():
-    ic("update hosts")
-    update_hosts()
-    ic("update filesystems")
-    update_filesystems()
-    ic("ignore filesystems")
-    ignore_filesystems()
-    ic("update parents")
-    update_parents()
-    ic("update sync status")
-    update_sync_status()
-    ic("set last updated date")
-    set_last_updated_date()
+    try:
+        ic("update hosts")
+        update_hosts()
+        ic("update filesystems")
+        update_filesystems()
+        ic("ignore filesystems")
+        ignore_filesystems()
+        ic("update parents")
+        update_parents()
+        ic("update sync status")
+        update_sync_status()
+        ic("set last updated date")
+        set_last_updated_date()
+    finally:
+        # Close (not just return to the pool) everything this run opened.
+        # Inside the API this runs in the gunicorn master, and a worker forked
+        # later must not inherit an open connection (#1).
+        internal_db.close_all()
+        source_db.close_all()
