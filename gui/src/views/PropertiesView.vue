@@ -1,13 +1,12 @@
 <script setup>
 import { useAuthedFetch } from "@/auth/authedFetch";
-import { ref, toRef, watch } from "vue";
+import { computed, ref, toRef, watch } from "vue";
 const props = defineProps({
   hostId: String,
   filesystemId: String,
 });
 
 const filesystemId = toRef(props, "filesystemId");
-const parentId = toRef(props, "parentId");
 
 const url = ref(
   `${import.meta.env.VITE_API_URL}/api/filesystems/${filesystemId.value}`,
@@ -24,17 +23,8 @@ const {
   .get()
   .json();
 
-if(filesystem?.value?.backup_parent?.id){
-let parentUrl = `${import.meta.env.VITE_API_URL}/api/filesystems/${filesystem?.value?.backup_parent?.id}`;
-
-const {
-  isFetching: parentFetching,
-  error: parentError,
-  data: parent,
-} = await useAuthedFetch(parentUrl, { initialData: { results: [] }, refetch: true })
-  .get()
-  .json();
-}
+// The API includes the parent's host, so no second request is needed.
+const parent = computed(() => filesystem.value?.backup_parent);
 // async function getHostId(filesystem) {
 //   const url = `${import.meta.env.VITE_API_URL}/api/filesystems/${filesystem.id}`;
 // const {
@@ -56,9 +46,8 @@ const {
 <template>
   <div>
     <h1 class="text-left">Info for {{ filesystem.path }}</h1>
-    <div v-if="filesystem && filesystem.backup_parent">
+    <div v-if="parent">
       <h2 class="text-left">Parent</h2>
-      {{ filesystem.backup_parent_id }}
       <RouterLink
         :class="[
           'font-medium',
