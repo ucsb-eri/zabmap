@@ -1,3 +1,4 @@
+import logging
 import os
 from enum import Enum
 
@@ -7,17 +8,47 @@ from peewee import (
     DateTimeField,
     ForeignKeyField,
     IntegerField,
+    InterfaceError,
     Model,
+    OperationalError,
     PrimaryKeyField,
 )
 from playhouse.pool import PooledPostgresqlDatabase
 from playhouse.postgres_ext import JSONField
 from playhouse.shortcuts import ReconnectMixin
 
+logger = logging.getLogger(__name__)
+
 
 class ResilientPooledPostgresqlDatabase(ReconnectMixin, PooledPostgresqlDatabase):
     """Pooled Postgres that transparently reconnects on dead connections —
     useful for long-idle background jobs where firewalls drop idle TCP."""
+
+    # ReconnectMixin's defaults only match MySQL errors. These are the psycopg2
+    # errors raised once the server side of a connection is gone (see #1).
+    reconnect_errors = (
+        (OperationalError, "server closed the connection"),
+        (OperationalError, "connection has been closed unexpectedly"),
+        (OperationalError, "terminating connection"),
+        (InterfaceError, "connection already closed"),
+    )
+
+    def _reconnect(self, func, *args, **kwargs):
+        # Log every successful reconnect, so the drops behind #1 still show up
+        # in the logs even though users no longer see an error.
+        attempts = []
+
+        def counted(*a, **kw):
+            attempts.append(None)
+            return func(*a, **kw)
+
+        result = super()._reconnect(counted, *args, **kwargs)
+        if len(attempts) > 1:
+            logger.warning(
+                "Database %s: connection was lost; reconnected and retried",
+                self.database,
+            )
+        return result
 
 # Source DB: holds the raw incoming ZfsSnapshots written by upstream tooling.
 # zabmap only reads from here (the scheduler reads, the /api/backupstatus endpoint reads).

@@ -15,7 +15,7 @@ from playhouse.flask_utils import PaginatedQuery
 from playhouse.shortcuts import model_to_dict
 
 from zabmap_api.auth import require_auth
-from zabmap_api.db import Filesystem, Host, MetaData
+from zabmap_api.db import Filesystem, Host, MetaData, internal_db
 
 app = Flask(__name__)
 app.config.from_prefixed_env()
@@ -45,6 +45,20 @@ CORS(
         }
     },
 )
+
+
+# Check a connection out of the pool for each request and hand it back after,
+# so a connection the server dropped is discarded instead of being reused by
+# every later request in this worker (#1).
+@app.before_request
+def _db_connect():
+    internal_db.connect(reuse_if_open=True)
+
+
+@app.teardown_request
+def _db_close(exc):
+    if not internal_db.is_closed():
+        internal_db.close()
 
 
 def get_db_connection():
